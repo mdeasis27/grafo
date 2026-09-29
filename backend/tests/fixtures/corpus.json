@@ -1,0 +1,19 @@
+{
+  "chunks": [
+    { "id": "c01", "docId": "filings-acme", "section": "M&A", "text": "Acme Corp acquired BetaCorp." },
+    { "id": "c02", "docId": "filings-acme", "section": "Company history", "text": "Acme Corp was founded by Alice Chen." },
+    { "id": "c03", "docId": "filings-acme", "section": "Leadership", "text": "Bob Rivera is the CEO of Acme Corp." },
+    { "id": "c04", "docId": "funding-delta", "section": "Portfolio", "text": "Delta Ventures invested in Acme Corp." },
+    { "id": "c05", "docId": "funding-delta", "section": "Portfolio", "text": "Delta Ventures invested in Gamma Labs." },
+    { "id": "c06", "docId": "market-map", "section": "Competitive landscape", "text": "Acme Corp competes with Gamma Labs." },
+    { "id": "c07", "docId": "market-map", "section": "Geography", "text": "Gamma Labs operates in Mexico." },
+    { "id": "c08", "docId": "market-map", "section": "Geography", "text": "Acme Corp operates in Brazil." },
+    { "id": "c09", "docId": "market-map", "section": "Supply chain", "text": "Acme Corp supplies Zeta Systems." },
+    { "id": "c10", "docId": "market-map", "section": "Partnerships", "text": "Gamma Labs partners with Epsilon Analytics." },
+    { "id": "c11", "docId": "products", "section": "Catalog", "text": "Acme Corp owns Falcon." },
+    { "id": "c12", "docId": "products", "section": "Catalog", "text": "Gamma Labs owns Orbit." },
+    { "id": "c13", "docId": "filings-acme", "section": "People", "text": "Acme Corp employs Carol Diaz." },
+    { "id": "c14", "docId": "market-map", "section": "Geography", "text": "Epsilon Analytics operates in Mexico." },
+    { "id": "c15", "docId": "funding-delta", "section": "Portfolio", "text": "Delta Ventures invested in BetaCorp." }
+  ]
+}

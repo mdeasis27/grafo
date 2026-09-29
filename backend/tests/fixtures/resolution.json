@@ -1,0 +1,14 @@
+{
+  "cases": [
+    { "mention": "Acme Corp", "expected": "acme" },
+    { "mention": "ACME", "expected": "acme" },
+    { "mention": "Acme Corporation", "expected": "acme" },
+    { "mention": "acme", "expected": "acme" },
+    { "mention": "Acme Corrp", "expected": "acme" },
+    { "mention": "Delta", "expected": "delta" },
+    { "mention": "GammaLabs", "expected": "gamma" },
+    { "mention": "Gamma Labs", "expected": "gamma" },
+    { "mention": "Tesla", "expected": null },
+    { "mention": "Oracle", "expected": null }
+  ]
+}

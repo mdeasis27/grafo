@@ -1,0 +1,53 @@
+{
+  "entityTypes": ["COMPANY", "PERSON", "PRODUCT", "INDUSTRY", "REGION", "INVESTOR"],
+  "relationTypes": ["ACQUIRED", "FOUNDED_BY", "CEO_OF", "INVESTED_IN", "COMPETES_WITH", "SUPPLIES_TO", "OPERATES_IN", "PARTNERS_WITH", "OWNS", "EMPLOYS"],
+  "relationPhrases": [
+    { "relation": "FOUNDED_BY", "phrase": "founded by" },
+    { "relation": "CEO_OF", "phrase": "ceo of" },
+    { "relation": "ACQUIRED", "phrase": "acquired" },
+    { "relation": "INVESTED_IN", "phrase": "invested in" },
+    { "relation": "COMPETES_WITH", "phrase": "competes with" },
+    { "relation": "SUPPLIES_TO", "phrase": "supplies" },
+    { "relation": "OPERATES_IN", "phrase": "operates in" },
+    { "relation": "PARTNERS_WITH", "phrase": "partners with" },
+    { "relation": "OWNS", "phrase": "owns" },
+    { "relation": "EMPLOYS", "phrase": "employs" }
+  ],
+  "relationSynonyms": {
+    "purchased": "ACQUIRED",
+    "bought": "ACQUIRED",
+    "hired": "EMPLOYS"
+  },
+  "questionKeywords": [
+    { "key": "ceo of", "rel": "CEO_OF", "dir": "in" },
+    { "key": "founded", "rel": "FOUNDED_BY", "dir": "out" },
+    { "key": "acquire", "rel": "ACQUIRED", "dir": "out" },
+    { "key": "backed", "rel": "INVESTED_IN", "dir": "in" },
+    { "key": "invested in", "rel": "INVESTED_IN", "dir": "in" },
+    { "key": "competitor", "rel": "COMPETES_WITH", "dir": "out" },
+    { "key": "competes with", "rel": "COMPETES_WITH", "dir": "out" },
+    { "key": "partner", "rel": "PARTNERS_WITH", "dir": "out" },
+    { "key": "operate", "rel": "OPERATES_IN", "dir": "out" },
+    { "key": "supplies", "rel": "SUPPLIES_TO", "dir": "in" },
+    { "key": "owns", "rel": "OWNS", "dir": "out" },
+    { "key": "employs", "rel": "EMPLOYS", "dir": "out" }
+  ],
+  "aggKeywords": [
+    { "key": "invest", "rel": "INVESTED_IN", "dir": "out" },
+    { "key": "operate", "rel": "OPERATES_IN", "dir": "in" }
+  ],
+  "aggTriggers": ["how many", "cuántos", "cuantos"],
+  "resolutionThreshold": 0.6,
+  "stopwords": [
+    "a", "an", "the", "of", "in", "on", "at", "to", "for", "and", "or",
+    "is", "are", "was", "were", "be", "been", "being",
+    "who", "what", "which", "where", "when", "how", "many", "much",
+    "did", "does", "do", "it", "its", "that", "this", "these", "those",
+    "with", "by", "from", "about", "as", "has", "have", "had",
+    "not", "no", "into", "over", "under", "between", "through", "during",
+    "without", "within", "than", "then", "so", "but", "if", "all", "any",
+    "also", "can", "could", "would", "should", "will", "may", "might",
+    "he", "she", "they", "we", "you", "his", "her", "their", "our", "your",
+    "i", "me", "my", "mine", "them", "us", "there", "here", "here"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "entities": [
+    { "id": "acme", "type": "COMPANY", "name": "Acme Corp", "aliases": ["ACME", "Acme Corporation", "Acme"] },
+    { "id": "beta", "type": "COMPANY", "name": "BetaCorp", "aliases": ["Beta Corp", "Beta"] },
+    { "id": "gamma", "type": "COMPANY", "name": "Gamma Labs", "aliases": ["Gamma", "GammaLabs"] },
+    { "id": "epsilon", "type": "COMPANY", "name": "Epsilon Analytics", "aliases": ["Epsilon"] },
+    { "id": "zeta", "type": "COMPANY", "name": "Zeta Systems", "aliases": ["Zeta"] },
+    { "id": "delta", "type": "INVESTOR", "name": "Delta Ventures", "aliases": ["Delta"] },
+    { "id": "alice", "type": "PERSON", "name": "Alice Chen", "aliases": ["Alice"] },
+    { "id": "bob", "type": "PERSON", "name": "Bob Rivera", "aliases": ["Bob"] },
+    { "id": "carol", "type": "PERSON", "name": "Carol Diaz", "aliases": ["Carol"] },
+    { "id": "falcon", "type": "PRODUCT", "name": "Falcon", "aliases": [] },
+    { "id": "orbit", "type": "PRODUCT", "name": "Orbit", "aliases": [] },
+    { "id": "fintech", "type": "INDUSTRY", "name": "Fintech", "aliases": ["financial technology"] },
+    { "id": "mexico", "type": "REGION", "name": "Mexico", "aliases": [] },
+    { "id": "brazil", "type": "REGION", "name": "Brazil", "aliases": [] }
+  ]
+}
