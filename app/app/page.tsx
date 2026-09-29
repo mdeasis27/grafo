@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/design-system/components/alert";
 import { Card } from "@/design-system/components/card";
@@ -12,21 +13,91 @@ import {
   getExtractionStats,
   getHopLabels,
   getResolutionDemo,
-  getWorkedExample,
 } from "@/lib/grafo/demo";
+
+import entitiesRaw from "@/lib/grafo/data/entities.json";
+import corpusRaw from "@/lib/grafo/data/corpus.json";
+import goldenRaw from "@/lib/grafo/data/golden.json";
+import { extractTriples, triplesByChunk } from "@/lib/grafo/extract";
+import { answerGraph, answerVector, findKeywords } from "@/lib/grafo/answer";
+import { traceHops } from "@/lib/grafo/graph";
+import { canonicalName, findMentions } from "@/lib/grafo/resolve";
+import { ONTOLOGY } from "@/lib/grafo/ontology";
+import type { Chunk, Entity, GoldenQuestion } from "@/lib/grafo/types";
+
+const ENTITIES = entitiesRaw.entities as Entity[];
+const CHUNKS = corpusRaw.chunks as Chunk[];
+const GOLDEN = goldenRaw.questions as GoldenQuestion[];
+
+const EXTRACTION = extractTriples(CHUNKS, ENTITIES);
+const triples = EXTRACTION.triples;
+const REGISTRY = { entities: ENTITIES };
+const BY_CHUNK = triplesByChunk(triples);
+const chunkTextById = new Map(CHUNKS.map((c) => [c.id, c.text]));
 
 const BENCH = getBenchmark();
 const STATS = getExtractionStats();
 const DELTA = getDelta();
-const WORKED = getWorkedExample();
 const RESOLUTION = getResolutionDemo();
 const HOP_LABELS = getHopLabels();
+
+const EXAMPLES = GOLDEN.filter((q) =>
+  ["q01", "q06", "q07", "q10", "q12"].includes(q.id),
+);
+
+interface Hop {
+  rel: string;
+  from: string;
+  to: string;
+  chunkId: string;
+  chunkText: string;
+}
+
+interface Answer {
+  question: string;
+  graph: string | null;
+  vector: string | null;
+  hops: Hop[];
+}
 
 function pct(v: number) {
   return `${(v * 100).toFixed(0)}%`;
 }
 
 export default function AppPage() {
+  const [question, setQuestion] = useState(GOLDEN.find((q) => q.id === "q06")!.text);
+  const [result, setResult] = useState<Answer | null>(null);
+
+  function run() {
+    const q = question.trim();
+    if (!q) return;
+
+    const graph = answerGraph(q, REGISTRY, triples);
+    const vector = answerVector(q, REGISTRY, CHUNKS, BY_CHUNK, 3);
+
+    const keywords = findKeywords(q, ONTOLOGY.questionKeywords);
+    const anchor = findMentions(q, REGISTRY)[0];
+    const hops: Hop[] = [];
+    if (anchor) {
+      const trace = traceHops(
+        anchor,
+        keywords.map((k) => ({ rel: k.rel, dir: k.dir })),
+        triples,
+      );
+      for (const h of trace.hops) {
+        hops.push({
+          rel: h.rel,
+          from: canonicalName(h.from, REGISTRY) ?? h.from,
+          to: canonicalName(h.to, REGISTRY) ?? h.to,
+          chunkId: h.chunkId,
+          chunkText: chunkTextById.get(h.chunkId) ?? "",
+        });
+      }
+    }
+
+    setResult({ question: q, graph, vector, hops });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-background/80 backdrop-blur-md">
@@ -76,6 +147,79 @@ export default function AppPage() {
           />
         </div>
 
+        {/* ── LIVE QUERY ──────────────────────── */}
+        <section>
+          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Consulta en vivo</h2>
+          <p className="text-sm text-muted-foreground mb-5">
+            Escribe una pregunta o elige un ejemplo. El grafo responde con traversal y citas;
+            el baseline vector-only devuelve <code className="font-mono text-xs">null</code> cuando
+            necesita cruzar chunks.
+          </p>
+
+          <Card className="p-4">
+            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Pregunta de ejemplo
+            </label>
+            <select
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              className="mb-3 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
+            >
+              {EXAMPLES.map((q) => (
+                <option key={q.id} value={q.text}>
+                  {q.text} ({q.hops})
+                </option>
+              ))}
+            </select>
+            <input
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Escribe tu pregunta…"
+              className="mb-3 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
+            />
+            <button
+              onClick={run}
+              className="w-full rounded-[var(--radius-md)] bg-accent px-4 py-2.5 text-sm font-medium text-[#ffffff] hover:bg-accent/90 transition-colors"
+            >
+              Responder con grafo
+            </button>
+          </Card>
+
+          {result && (
+            <Card className="mt-4 p-5">
+              <p className="text-sm font-semibold text-foreground">{result.question}</p>
+
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <StatusBadge tone="success">Graph answer</StatusBadge>
+                <span className="text-foreground font-semibold">
+                  {result.graph ?? "— (sin match)"}
+                </span>
+                <span className="mx-2 h-4 w-px bg-[var(--border)]" aria-hidden="true" />
+                <StatusBadge tone="warning">Vector answer</StatusBadge>
+                <span className="text-muted-foreground">
+                  {result.vector ?? "null (no puede encadenar)"}
+                </span>
+              </div>
+
+              {result.hops.length > 0 && (
+                <ol className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
+                  {result.hops.map((h, i) => (
+                    <li key={i} className="flex items-center gap-3 text-sm">
+                      <StatusBadge tone="info">{h.rel}</StatusBadge>
+                      <span className="text-foreground">{h.from}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className="text-foreground font-semibold">{h.to}</span>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        [{h.chunkId}] {h.chunkText}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </Card>
+          )}
+        </section>
+
         {/* ── BENCHMARK BY HOP COUNT ──────────── */}
         <section>
           <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Benchmark por hop count</h2>
@@ -113,36 +257,6 @@ export default function AppPage() {
               </tbody>
             </table>
           </div>
-        </section>
-
-        {/* ── WORKED EXAMPLE ──────────────────── */}
-        <section>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Ejemplo 2-hop con citas</h2>
-          <p className="text-sm text-muted-foreground mb-5">
-            Cada hop cita el chunk que lo justifica (el grafo y el índice comparten el mismo
-            chunk id). El baseline vector-only devuelve <code className="font-mono text-xs">null</code>: no puede cruzar chunks.
-          </p>
-          <Card className="p-5">
-            <p className="text-sm font-semibold text-foreground mb-4">{WORKED.question}</p>
-            <ol className="space-y-2">
-              {WORKED.graph.hops.map((h, i) => (
-                <li key={i} className="flex items-center gap-3 text-sm">
-                  <StatusBadge tone="info">{h.rel}</StatusBadge>
-                  <span className="text-foreground">{h.from}</span>
-                  <span className="text-muted-foreground">→</span>
-                  <span className="text-foreground font-semibold">{h.to}</span>
-                  <span className="text-xs text-muted-foreground font-mono">[{h.chunkId}] {h.chunkText}</span>
-                </li>
-              ))}
-            </ol>
-            <div className="mt-4 flex items-center gap-3">
-              <StatusBadge tone="success">Graph answer</StatusBadge>
-              <span className="text-foreground font-semibold">{WORKED.graph.answer}</span>
-              <span className="mx-2 h-4 w-px bg-[var(--border)]" aria-hidden="true" />
-              <StatusBadge tone="warning">Vector answer</StatusBadge>
-              <span className="text-muted-foreground">{WORKED.vector.answer ?? "null (no puede encadenar)"}</span>
-            </div>
-          </Card>
         </section>
 
         {/* ── ENTITY RESOLUTION ───────────────── */}
