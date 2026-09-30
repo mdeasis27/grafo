@@ -1,112 +1,131 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Alert } from "@/design-system/components/alert";
-import { Card } from "@/design-system/components/card";
-import { MetricCard } from "@/design-system/components/metric-card";
 import { StatusBadge } from "@/design-system/components/status-badge";
-import { cn } from "@/design-system/utils";
-import {
-  getBenchmark,
-  getDelta,
-  getExtractionStats,
-  getHopLabels,
-  getResolutionDemo,
-} from "@/lib/grafo/demo";
-
+import { extractTriples } from "@/lib/grafo/extract";
+import { canonicalName, findMentions } from "@/lib/grafo/resolve";
+import { findKeywords } from "@/lib/grafo/answer";
+import { traceHops } from "@/lib/grafo/graph";
+import { ONTOLOGY } from "@/lib/grafo/ontology";
 import entitiesRaw from "@/lib/grafo/data/entities.json";
 import corpusRaw from "@/lib/grafo/data/corpus.json";
-import goldenRaw from "@/lib/grafo/data/golden.json";
-import { extractTriples, triplesByChunk } from "@/lib/grafo/extract";
-import { answerGraph, answerVector, findKeywords } from "@/lib/grafo/answer";
-import { traceHops } from "@/lib/grafo/graph";
-import { canonicalName, findMentions } from "@/lib/grafo/resolve";
-import { ONTOLOGY } from "@/lib/grafo/ontology";
-import type { Chunk, Entity, GoldenQuestion } from "@/lib/grafo/types";
+import type { Chunk, Entity } from "@/lib/grafo/types";
 
 const ENTITIES = entitiesRaw.entities as Entity[];
 const CHUNKS = corpusRaw.chunks as Chunk[];
-const GOLDEN = goldenRaw.questions as GoldenQuestion[];
-
-const EXTRACTION = extractTriples(CHUNKS, ENTITIES);
-const triples = EXTRACTION.triples;
 const REGISTRY = { entities: ENTITIES };
-const BY_CHUNK = triplesByChunk(triples);
-const chunkTextById = new Map(CHUNKS.map((c) => [c.id, c.text]));
+const TRIPLES = extractTriples(CHUNKS, ENTITIES).triples;
 
-const BENCH = getBenchmark();
-const STATS = getExtractionStats();
-const DELTA = getDelta();
-const RESOLUTION = getResolutionDemo();
-const HOP_LABELS = getHopLabels();
+const chunkText = (id: string) => CHUNKS.find((c) => c.id === id)?.text ?? "";
 
-const EXAMPLES = GOLDEN.filter((q) =>
-  ["q01", "q06", "q07", "q10", "q12"].includes(q.id),
-);
+const REL_ES: Record<string, string> = {
+  ACQUIRED: "adquirió",
+  FOUNDED_BY: "fue fundada por",
+  CEO_OF: "es CEO de",
+  INVESTED_IN: "invirtió en",
+  COMPETES_WITH: "compite con",
+  SUPPLIES_TO: "provee a",
+  OPERATES_IN: "opera en",
+  PARTNERS_WITH: "se asocia con",
+  OWNS: "posee",
+  EMPLOYS: "emplea",
+};
 
-interface Hop {
+const TYPE_COLOR: Record<string, string> = {
+  COMPANY: "#7dd3fc",
+  PERSON: "#c4b5fd",
+  PRODUCT: "#f9a8d4",
+  REGION: "#86efac",
+  INVESTOR: "#fcd34d",
+  INDUSTRY: "#5eead4",
+};
+
+const TYPE_LABEL: Record<string, string> = {
+  COMPANY: "Empresa",
+  PERSON: "Persona",
+  PRODUCT: "Producto",
+  REGION: "Región",
+  INVESTOR: "Inversor",
+  INDUSTRY: "Industria",
+};
+
+// Fixed layout (viewBox 0 0 800 500).
+const POS: Record<string, { x: number; y: number }> = {
+  delta: { x: 400, y: 55 },
+  bob: { x: 140, y: 100 },
+  alice: { x: 260, y: 80 },
+  carol: { x: 400, y: 120 },
+  zeta: { x: 45, y: 235 },
+  acme: { x: 285, y: 235 },
+  gamma: { x: 525, y: 235 },
+  epsilon: { x: 720, y: 235 },
+  beta: { x: 145, y: 375 },
+  falcon: { x: 285, y: 375 },
+  brazil: { x: 185, y: 470 },
+  orbit: { x: 525, y: 375 },
+  mexico: { x: 625, y: 405 },
+};
+
+const EXAMPLES = [
+  { q: "Who is the CEO of Acme?", label: "1-hop", id: "q01" },
+  { q: "Acme's competitor operates in which region?", label: "2-hop", id: "q06" },
+  { q: "The company Acme acquired — which investor backed it?", label: "2-hop", id: "q07" },
+  { q: "Acme's competitor partners with a company — in which region does that company operate?", label: "3-hop", id: "q09" },
+];
+
+const NODES = ENTITIES.filter((e) => POS[e.id]);
+
+interface HopResult {
   rel: string;
   from: string;
   to: string;
   chunkId: string;
-  chunkText: string;
 }
 
-interface Answer {
-  question: string;
-  graph: string | null;
-  vector: string | null;
-  hops: Hop[];
-}
-
-function pct(v: number) {
-  return `${(v * 100).toFixed(0)}%`;
+function computeTrace(question: string): { hops: HopResult[]; end: string | null; answer: string | null } {
+  const anchor = findMentions(question, REGISTRY)[0] ?? null;
+  const keywords = findKeywords(question, ONTOLOGY.questionKeywords);
+  if (!anchor || keywords.length === 0) return { hops: [], end: null, answer: null };
+  const trace = traceHops(anchor, keywords.map((k) => ({ rel: k.rel, dir: k.dir })), TRIPLES);
+  const answer = trace.end ? canonicalName(trace.end, REGISTRY) : null;
+  return { hops: trace.hops, end: trace.end, answer };
 }
 
 export default function AppPage() {
-  const [question, setQuestion] = useState(GOLDEN.find((q) => q.id === "q06")!.text);
-  const [result, setResult] = useState<Answer | null>(null);
+  const [question, setQuestion] = useState(EXAMPLES[2].q);
+  const [result, setResult] = useState<ReturnType<typeof computeTrace> | null>(null);
+  const [step, setStep] = useState(0);
 
-  function run() {
-    const q = question.trim();
-    if (!q) return;
-
-    const graph = answerGraph(q, REGISTRY, triples);
-    const vector = answerVector(q, REGISTRY, CHUNKS, BY_CHUNK, 3);
-
-    const keywords = findKeywords(q, ONTOLOGY.questionKeywords);
-    const anchor = findMentions(q, REGISTRY)[0];
-    const hops: Hop[] = [];
-    if (anchor) {
-      const trace = traceHops(
-        anchor,
-        keywords.map((k) => ({ rel: k.rel, dir: k.dir })),
-        triples,
-      );
-      for (const h of trace.hops) {
-        hops.push({
-          rel: h.rel,
-          from: canonicalName(h.from, REGISTRY) ?? h.from,
-          to: canonicalName(h.to, REGISTRY) ?? h.to,
-          chunkId: h.chunkId,
-          chunkText: chunkTextById.get(h.chunkId) ?? "",
-        });
-      }
-    }
-
-    setResult({ question: q, graph, vector, hops });
+  function run(q: string) {
+    setQuestion(q);
+    setResult(computeTrace(q));
+    setStep(0);
   }
+
+  useEffect(() => {
+    if (result && step < result.hops.length) {
+      const t = setTimeout(() => setStep((s) => s + 1), 650);
+      return () => clearTimeout(t);
+    }
+  }, [result, step]);
+
+  const activeHops = result ? result.hops.slice(0, step) : [];
+  const activeNodes = new Set<string>();
+  if (result && result.hops.length > 0) {
+    activeNodes.add(result.hops[0].from);
+    for (const h of activeHops) activeNodes.add(h.to);
+  }
+
+  const currentNode = activeHops.length > 0 ? activeHops[activeHops.length - 1].to : result?.hops[0]?.from ?? null;
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-background/80 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200"
-            >
+            <Link href="/" className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
@@ -116,7 +135,7 @@ export default function AppPage() {
             <div className="flex items-center gap-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
                 <svg className="h-4 w-4 text-foreground" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 0 1-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 0 1 4.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.393A9.065 9.065 0 0 1 12 15a9.065 9.065 0 0 0-6.23-.693L5 14.5m14.8.8 1.402 1.402c1.232 1.232.65 3.318-1.067 3.611A48.309 48.309 0 0 1 12 21c-2.773 0-5.491-.235-8.135-.687-1.718-.293-2.3-2.379-1.067-3.61L5 14.5" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                 </svg>
               </div>
               <div>
@@ -126,180 +145,192 @@ export default function AppPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <StatusBadge tone="info" dot className="px-3 py-1">
-              Demo mode
-            </StatusBadge>
+            <StatusBadge tone="info" dot className="px-3 py-1">Demo mode</StatusBadge>
           </div>
         </div>
       </header>
 
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-10">
-        {/* ── SUMMARY BAR ─────────────────────── */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <MetricCard label="Entidades" value={STATS.entities} hint="nodos resueltos" />
-          <MetricCard label="Triples" value={STATS.triples} hint="aristas con chunk id" tone="success" />
-          <MetricCard label="Preguntas eval" value={BENCH.n} hint="estratificadas por hops" />
-          <MetricCard
-            label="Δ graph vs vector"
-            value={`+${(DELTA * 100).toFixed(0)}pp`}
-            hint="accuracy overall"
-            tone="success"
-          />
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        <div className="max-w-3xl">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">Recorre el grafo en vivo</h2>
+          <p className="text-sm text-muted-foreground mt-2">
+            Caso de uso real: <strong>due diligence de proveedores y competidores</strong>. Haz una
+            pregunta multi-hop y mira cómo el grafo encadena entidades — algo que un buscador
+            vectorial no puede. Cada salto cita la frase que lo justifica.
+          </p>
         </div>
 
-        {/* ── LIVE QUERY ──────────────────────── */}
-        <section>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Consulta en vivo</h2>
-          <p className="text-sm text-muted-foreground mb-5">
-            Escribe una pregunta o elige un ejemplo. El grafo responde con traversal y citas;
-            el baseline vector-only devuelve <code className="font-mono text-xs">null</code> cuando
-            necesita cruzar chunks.
-          </p>
-
-          <Card className="p-4">
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Pregunta de ejemplo
-            </label>
-            <select
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              className="mb-3 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
-            >
-              {EXAMPLES.map((q) => (
-                <option key={q.id} value={q.text}>
-                  {q.text} ({q.hops})
-                </option>
-              ))}
-            </select>
+        {/* ── QUESTION BAR ───────────────────── */}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-2">
+            {EXAMPLES.map((ex) => (
+              <button
+                key={ex.id}
+                onClick={() => run(ex.q)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  question === ex.q
+                    ? "border-info/40 bg-info/10 text-info"
+                    : "border-[var(--border)] text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {ex.label}: {ex.q.length > 52 ? ex.q.slice(0, 52) + "…" : ex.q}
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2">
             <input
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Escribe tu pregunta…"
-              className="mb-3 w-full rounded-[var(--radius-md)] border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
+              onKeyDown={(e) => e.key === "Enter" && run(question)}
+              placeholder="Pregunta en inglés, p.ej. Acme's competitor operates in which region?"
+              className="flex-1 rounded-[var(--radius-md)] border border-[var(--border)] bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/60"
             />
             <button
-              onClick={run}
-              className="w-full rounded-[var(--radius-md)] bg-accent px-4 py-2.5 text-sm font-medium text-[#ffffff] hover:bg-accent/90 transition-colors"
+              onClick={() => run(question)}
+              className="rounded-[var(--radius-md)] bg-accent px-5 py-2 text-sm font-medium text-[#ffffff] hover:bg-accent/90 transition-colors"
             >
-              Responder con grafo
+              Recorrer grafo
             </button>
-          </Card>
-
-          {result && (
-            <Card className="mt-4 p-5">
-              <p className="text-sm font-semibold text-foreground">{result.question}</p>
-
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <StatusBadge tone="success">Graph answer</StatusBadge>
-                <span className="text-foreground font-semibold">
-                  {result.graph ?? "— (sin match)"}
-                </span>
-                <span className="mx-2 h-4 w-px bg-[var(--border)]" aria-hidden="true" />
-                <StatusBadge tone="warning">Vector answer</StatusBadge>
-                <span className="text-muted-foreground">
-                  {result.vector ?? "null (no puede encadenar)"}
-                </span>
-              </div>
-
-              {result.hops.length > 0 && (
-                <ol className="mt-4 space-y-2 border-t border-[var(--border)] pt-4">
-                  {result.hops.map((h, i) => (
-                    <li key={i} className="flex items-center gap-3 text-sm">
-                      <StatusBadge tone="info">{h.rel}</StatusBadge>
-                      <span className="text-foreground">{h.from}</span>
-                      <span className="text-muted-foreground">→</span>
-                      <span className="text-foreground font-semibold">{h.to}</span>
-                      <span className="text-xs text-muted-foreground font-mono">
-                        [{h.chunkId}] {h.chunkText}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </Card>
-          )}
-        </section>
-
-        {/* ── BENCHMARK BY HOP COUNT ──────────── */}
-        <section>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Benchmark por hop count</h2>
-          <p className="text-sm text-muted-foreground mb-5">
-            Graph RAG (traversal con citas) frente a un baseline vector-only (single-passage
-            reader). Paridad en 1-hop; la brecha se abre al subir los hops, porque el baseline no
-            puede encadenar ni contar.
-          </p>
-          <div className="overflow-x-auto rounded-[var(--radius-md)] shadow-[var(--shadow-card)] bg-card">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border)] bg-[var(--gray-50)]">
-                  <th scope="col" className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dificultad</th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Graph</th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Vector-only</th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Δ</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border)]">
-                {BENCH.buckets.map((b) => {
-                  const g = BENCH.graph.byHop[b];
-                  const v = BENCH.vector.byHop[b];
-                  const delta = g.accuracy - v.accuracy;
-                  return (
-                    <tr key={b}>
-                      <td className="px-5 py-3.5 font-semibold text-foreground">{HOP_LABELS[b]}</td>
-                      <td className="px-4 py-3.5 text-right tabular-nums text-success">{pct(g.accuracy)}</td>
-                      <td className="px-4 py-3.5 text-right tabular-nums text-muted-foreground">{pct(v.accuracy)}</td>
-                      <td className={cn("px-4 py-3.5 text-right tabular-nums", delta > 0 ? "text-success" : "text-muted-foreground")}>
-                        {delta > 0 ? `+${pct(delta)}` : pct(delta)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
           </div>
-        </section>
+        </div>
 
-        {/* ── ENTITY RESOLUTION ───────────────── */}
-        <section>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Entity resolution</h2>
-          <p className="text-sm text-muted-foreground mb-5">
-            &quot;Acme Corp&quot;, &quot;ACME&quot; y &quot;Acme Corporation&quot; colapsan en un solo nodo
-            (exact → alias → trigram similarity sobre umbral). Un typo &quot;Acme Corrp&quot; también resuelve;
-            una entidad desconocida no.
-          </p>
-          <div className="grid gap-4 sm:grid-cols-5">
-            {RESOLUTION.map((r) => (
-              <Card key={r.mention} className="p-4 text-center">
-                <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">{r.mention}</p>
-                <p className="text-sm font-semibold text-foreground">{r.node ?? "—"}</p>
-                <div className="mt-2">
-                  {r.resolved ? (
-                    <StatusBadge tone="success">resuelto</StatusBadge>
-                  ) : (
-                    <StatusBadge tone="warning">sin match</StatusBadge>
+        {/* ── GRAPH ──────────────────────────── */}
+        <div className="rounded-[var(--radius-md)] shadow-[var(--shadow-card)] bg-card p-4 overflow-x-auto">
+          <svg viewBox="0 0 800 500" className="w-full min-w-[640px]" role="img" aria-label="grafo de entidades">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#52525b" />
+              </marker>
+            </defs>
+
+            {/* edges */}
+            {TRIPLES.map((t, i) => {
+              const from = POS[t.head];
+              const to = POS[t.tail];
+              if (!from || !to) return null;
+              const active = activeHops.some((h) => h.from === t.head && h.to === t.tail);
+              const dx = to.x - from.x;
+              const dy = to.y - from.y;
+              const mx = (from.x + to.x) / 2;
+              const my = (from.y + to.y) / 2;
+              return (
+                <g key={i}>
+                  <line
+                    x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                    stroke={active ? "#38bdf8" : "#3f3f46"}
+                    strokeWidth={active ? 3 : 1.25}
+                    strokeDasharray={active ? undefined : "3 3"}
+                    opacity={active ? 1 : 0.55}
+                    markerEnd={active ? undefined : "url(#arrow)"}
+                    style={{ transition: "stroke 0.3s, stroke-width 0.3s, opacity 0.3s" }}
+                  />
+                  {active && (
+                    <circle cx={mx} cy={my} r={4} fill="#38bdf8" className="animate-ping" style={{ transformOrigin: `${mx}px ${my}px` }} />
                   )}
+                  <text x={mx + dx * 0.12} y={my + dy * 0.12 - 6} textAnchor="middle" fontSize="9" fill="#a1a1aa" className="font-mono">
+                    {REL_ES[t.rel] ?? t.rel}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* nodes */}
+            {NODES.map((e) => {
+              const p = POS[e.id];
+              const active = activeNodes.has(e.id);
+              const isCurrent = currentNode === e.id;
+              const isAnswer = result?.end === e.id && step >= result.hops.length && result.hops.length > 0;
+              const color = TYPE_COLOR[e.type] ?? "#e4e4e7";
+              return (
+                <g key={e.id} style={{ transition: "opacity 0.3s" }} opacity={active || result === null || step === 0 ? 1 : 0.35}>
+                  {isCurrent && <circle cx={p.x} cy={p.y} r={22} fill="none" stroke="#38bdf8" strokeWidth={2} className="animate-ping" />}
+                  <circle
+                    cx={p.x} cy={p.y} r={16}
+                    fill={color}
+                    fillOpacity={0.18}
+                    stroke={isAnswer ? "#38bdf8" : active ? color : "#52525b"}
+                    strokeWidth={isAnswer ? 3 : active ? 2 : 1.25}
+                    style={{ transition: "stroke 0.3s, stroke-width 0.3s" }}
+                  />
+                  <circle cx={p.x} cy={p.y} r={4} fill={color} />
+                  <text x={p.x} y={p.y + 30} textAnchor="middle" fontSize="11" fill={active ? "#fafafa" : "#a1a1aa"} fontWeight={active ? 600 : 400}>
+                    {e.name}
+                  </text>
+                  <text x={p.x} y={p.y + 42} textAnchor="middle" fontSize="8" fill="#71717a" className="font-mono uppercase">
+                    {TYPE_LABEL[e.type]}
+                  </text>
+                </g>
+              );
+            })}
+          </svg>
+        </div>
+
+        {/* ── TRAIL + ANSWER ─────────────────── */}
+        {result && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <h3 className="text-sm font-semibold text-foreground">Camino recorrido</h3>
+              {result.hops.length === 0 ? (
+                <Alert tone="warning" title="Sin recorrido">
+                  No se pudo anclar una entidad ni inferir palabras clave de la pregunta. Prueba
+                  una de las preguntas de ejemplo.
+                </Alert>
+              ) : (
+                result.hops.map((h, i) => {
+                  const fromName = canonicalName(h.from, REGISTRY);
+                  const toName = canonicalName(h.to, REGISTRY);
+                  const revealed = i < step;
+                  return (
+                    <div
+                      key={i}
+                      className={`rounded-[var(--radius-md)] border p-3 text-sm transition-opacity ${
+                        revealed ? "opacity-100" : "opacity-25"
+                      } border-[var(--border)] bg-surface`}
+                    >
+                      <p className="text-foreground">
+                        <span className="font-semibold">{fromName}</span>{" "}
+                        <span className="text-info font-medium">{REL_ES[h.rel] ?? h.rel}</span>{" "}
+                        <span className="font-semibold">{toName}</span>
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground font-mono">
+                        “[{h.chunkId}] {chunkText(h.chunkId)}”
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold text-foreground">Respuesta</h3>
+              {result.answer ? (
+                <div className="rounded-[var(--radius-md)] border border-success/30 bg-success/10 p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <StatusBadge tone="success" dot>grafo</StatusBadge>
+                    <span className="text-xs text-muted-foreground">{result.hops.length} hops</span>
+                  </div>
+                  <p className="text-2xl font-semibold text-foreground">{result.answer}</p>
                 </div>
-              </Card>
-            ))}
+              ) : (
+                <Alert tone="warning" title="El grafo no tiene respuesta">
+                  Esta pregunta requiere cruzar entidades que el grafo no conecta (fuera de
+                  alcance), o no contiene entidades conocidas.
+                </Alert>
+              )}
+              <div className="rounded-[var(--radius-md)] border border-[var(--border)] bg-surface p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <StatusBadge tone="warning">vector-only</StatusBadge>
+                  <span className="text-xs text-muted-foreground">baseline sin grafo</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {result.hops.length > 1
+                    ? "null — no puede encadenar ni contar: el baseline vectorial recupera chunks pero no tiene aristas que recorrer."
+                    : "Podría responder preguntas de un solo hecho, pero no encadenar hops."}
+                </p>
+              </div>
+            </div>
           </div>
-        </section>
-
-        {/* ── EXTRACTION ──────────────────────── */}
-        <section>
-          <h2 className="text-lg font-semibold tracking-tight text-foreground mb-1">Extracción con schema estricto</h2>
-          <Alert tone="info" title="Validación + reintento">
-            {STATS.triples} triples extraídos de {STATS.chunks} chunks con{" "}
-            <strong>{STATS.failures} fallos</strong> y <strong>{STATS.retries} reintentos</strong>.
-            Cada triple valida tipo de entidad y relación contra la ontología restringida; un verbo
-            desconocido reintenta por el mapa de sinónimos. El grafo es en memoria (proxy documentado
-            de Neo4j; Neo4j no corre en Vercel).
-          </Alert>
-        </section>
-
-        <footer className="pt-8 border-t border-[var(--border)] flex items-center justify-between text-xs text-muted-foreground">
-          <span>Grafo · Knowledge-graph RAG · Demo mode</span>
-          <a href="https://github.com/mdeasis27/grafo" target="_blank" rel="noopener noreferrer" className="hover:text-foreground transition-colors font-mono">GitHub</a>
-        </footer>
+        )}
       </div>
     </div>
   );
