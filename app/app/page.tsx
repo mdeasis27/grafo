@@ -5,10 +5,7 @@ import Link from "next/link";
 import { Alert } from "@/design-system/components/alert";
 import { StatusBadge } from "@/design-system/components/status-badge";
 import { extractTriples } from "@/lib/grafo/extract";
-import { canonicalName, findMentions } from "@/lib/grafo/resolve";
-import { findKeywords } from "@/lib/grafo/answer";
-import { traceHops } from "@/lib/grafo/graph";
-import { ONTOLOGY } from "@/lib/grafo/ontology";
+import { canonicalName } from "@/lib/grafo/resolve";
 import entitiesRaw from "@/lib/grafo/data/entities.json";
 import corpusRaw from "@/lib/grafo/data/corpus.json";
 import type { Chunk, Entity } from "@/lib/grafo/types";
@@ -79,46 +76,89 @@ const NODES = ENTITIES.filter((e) => POS[e.id]);
 
 interface HopResult {
   rel: string;
+  dir: "in" | "out";
   from: string;
   to: string;
   chunkId: string;
 }
 
-function computeTrace(question: string): { hops: HopResult[]; end: string | null; answer: string | null } {
-  const anchor = findMentions(question, REGISTRY)[0] ?? null;
-  const keywords = findKeywords(question, ONTOLOGY.questionKeywords);
-  if (!anchor || keywords.length === 0) return { hops: [], end: null, answer: null };
-  const trace = traceHops(anchor, keywords.map((k) => ({ rel: k.rel, dir: k.dir })), TRIPLES);
-  const answer = trace.end ? canonicalName(trace.end, REGISTRY) : null;
-  return { hops: trace.hops, end: trace.end, answer };
+interface GraphResult {
+  question?: string;
+  answer: string | null;
+  hops: number;
+  trace: HopResult[];
+  persisted?: boolean;
+  error?: string;
+}
+
+interface HistoryItem {
+  id: number;
+  question: string;
+  answer: string | null;
+  hops: number;
+  created_at: string;
 }
 
 export default function AppPage() {
   const [question, setQuestion] = useState(EXAMPLES[2].q);
-  const [result, setResult] = useState<ReturnType<typeof computeTrace> | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<GraphResult | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const [step, setStep] = useState(0);
 
-  function run(q: string) {
+  async function run(q: string) {
     setQuestion(q);
-    setResult(computeTrace(q));
+    setLoading(true);
+    setResult(null);
     setStep(0);
+    try {
+      const res = await fetch("/api/query", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q }),
+      });
+      const data = await res.json();
+      setResult(data);
+      if (res.ok) loadHistory();
+    } catch (err) {
+      setResult({ answer: null, hops: 0, trace: [], error: err instanceof Error ? err.message : "Error de red" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch("/api/history");
+      if (res.ok) {
+        const data = await res.json();
+        setHistory(data.queries ?? []);
+      }
+    } catch {
+      /* history is best-effort */
+    }
   }
 
   useEffect(() => {
-    if (result && step < result.hops.length) {
+    loadHistory();
+  }, []);
+
+  useEffect(() => {
+    if (result && step < result.trace.length) {
       const t = setTimeout(() => setStep((s) => s + 1), 650);
       return () => clearTimeout(t);
     }
   }, [result, step]);
 
-  const activeHops = result ? result.hops.slice(0, step) : [];
+  const activeHops = result ? result.trace.slice(0, step) : [];
   const activeNodes = new Set<string>();
-  if (result && result.hops.length > 0) {
-    activeNodes.add(result.hops[0].from);
+  if (result && result.trace.length > 0) {
+    activeNodes.add(result.trace[0].from);
     for (const h of activeHops) activeNodes.add(h.to);
   }
 
-  const currentNode = activeHops.length > 0 ? activeHops[activeHops.length - 1].to : result?.hops[0]?.from ?? null;
+  const endId = result && result.trace.length > 0 ? result.trace[result.trace.length - 1].to : null;
+  const currentNode = activeHops.length > 0 ? activeHops[activeHops.length - 1].to : result?.trace[0]?.from ?? null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -145,7 +185,7 @@ export default function AppPage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <StatusBadge tone="info" dot className="px-3 py-1">Demo mode</StatusBadge>
+            <StatusBadge tone="success" dot className="px-3 py-1">Postgres en vivo</StatusBadge>
           </div>
         </div>
       </header>
@@ -156,7 +196,8 @@ export default function AppPage() {
           <p className="text-sm text-muted-foreground mt-2">
             Caso de uso real: <strong>due diligence de proveedores y competidores</strong>. Haz una
             pregunta multi-hop y mira cómo el grafo encadena entidades — algo que un buscador
-            vectorial no puede. Cada salto cita la frase que lo justifica.
+            vectorial no puede. Cada salto cita la frase que lo justifica y cada pregunta queda
+            guardada en Postgres.
           </p>
         </div>
 
@@ -187,12 +228,15 @@ export default function AppPage() {
             />
             <button
               onClick={() => run(question)}
-              className="rounded-[var(--radius-md)] bg-accent px-5 py-2 text-sm font-medium text-[#ffffff] hover:bg-accent/90 transition-colors"
+              disabled={loading}
+              className="rounded-[var(--radius-md)] bg-accent px-5 py-2 text-sm font-medium text-[#ffffff] hover:bg-accent/90 transition-colors disabled:opacity-50"
             >
-              Recorrer grafo
+              {loading ? "Recorriendo…" : "Recorrer grafo"}
             </button>
           </div>
         </div>
+
+        {result?.error && <Alert tone="danger" title="No se pudo resolver">{result.error}</Alert>}
 
         {/* ── GRAPH ──────────────────────────── */}
         <div className="rounded-[var(--radius-md)] shadow-[var(--shadow-card)] bg-card p-4 overflow-x-auto">
@@ -239,7 +283,7 @@ export default function AppPage() {
               const p = POS[e.id];
               const active = activeNodes.has(e.id);
               const isCurrent = currentNode === e.id;
-              const isAnswer = result?.end === e.id && step >= result.hops.length && result.hops.length > 0;
+              const isAnswer = result !== null && endId === e.id && step >= result.trace.length && result.trace.length > 0;
               const color = TYPE_COLOR[e.type] ?? "#e4e4e7";
               return (
                 <g key={e.id} style={{ transition: "opacity 0.3s" }} opacity={active || result === null || step === 0 ? 1 : 0.35}>
@@ -270,13 +314,13 @@ export default function AppPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <h3 className="text-sm font-semibold text-foreground">Camino recorrido</h3>
-              {result.hops.length === 0 ? (
+              {result.trace.length === 0 ? (
                 <Alert tone="warning" title="Sin recorrido">
                   No se pudo anclar una entidad ni inferir palabras clave de la pregunta. Prueba
                   una de las preguntas de ejemplo.
                 </Alert>
               ) : (
-                result.hops.map((h, i) => {
+                result.trace.map((h, i) => {
                   const fromName = canonicalName(h.from, REGISTRY);
                   const toName = canonicalName(h.to, REGISTRY);
                   const revealed = i < step;
@@ -307,7 +351,7 @@ export default function AppPage() {
                 <div className="rounded-[var(--radius-md)] border border-success/30 bg-success/10 p-5">
                   <div className="flex items-center gap-2 mb-2">
                     <StatusBadge tone="success" dot>grafo</StatusBadge>
-                    <span className="text-xs text-muted-foreground">{result.hops.length} hops</span>
+                    <span className="text-xs text-muted-foreground">{result.hops} hops</span>
                   </div>
                   <p className="text-2xl font-semibold text-foreground">{result.answer}</p>
                 </div>
@@ -323,13 +367,40 @@ export default function AppPage() {
                   <span className="text-xs text-muted-foreground">baseline sin grafo</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {result.hops.length > 1
+                  {result.trace.length > 1
                     ? "null — no puede encadenar ni contar: el baseline vectorial recupera chunks pero no tiene aristas que recorrer."
                     : "Podría responder preguntas de un solo hecho, pero no encadenar hops."}
                 </p>
               </div>
             </div>
           </div>
+        )}
+
+        {/* ── HISTORY ─────────────────────────── */}
+        {history.length > 0 && (
+          <section>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Historial de consultas (persistido en Postgres)</h3>
+            <div className="overflow-x-auto rounded-[var(--radius-md)] shadow-[var(--shadow-card)] bg-card">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--border)] bg-[var(--gray-50)]">
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pregunta</th>
+                    <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">Respuesta</th>
+                    <th scope="col" className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Hops</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--border)]">
+                  {history.map((h) => (
+                    <tr key={h.id} className="cursor-pointer hover:bg-muted/40" onClick={() => run(h.question)}>
+                      <td className="px-4 py-2.5 text-foreground">{h.question}</td>
+                      <td className="px-4 py-2.5 text-foreground">{h.answer ?? "—"}</td>
+                      <td className="px-4 py-2.5 text-right tabular-nums text-foreground">{h.hops}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         )}
       </div>
     </div>
