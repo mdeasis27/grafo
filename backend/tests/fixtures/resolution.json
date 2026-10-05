@@ -8,7 +8,7 @@
     { "mention": "Delta", "expected": "delta" },
     { "mention": "GammaLabs", "expected": "gamma" },
     { "mention": "Gamma Labs", "expected": "gamma" },
-    { "mention": "Tesla", "expected": null },
+    { "mention": "Unlisted entity", "expected": null },
     { "mention": "Oracle", "expected": null }
   ]
 }

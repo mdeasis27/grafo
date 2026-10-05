@@ -99,9 +99,23 @@ export function getHopLabels(): Record<string, string> {
 }
 
 export function getResolutionDemo() {
-  const mentions = ["Acme Corp", "ACME", "Acme Corporation", "Acme Corrp", "Tesla"];
+  const mentions = ["Organization A", "ORGANIZATION A", "Organization A Incorporated", "Organization A Incorported", "Unlisted entity"];
   return mentions.map((m) => {
     const id = resolveMention(m, REGISTRY);
     return { mention: m, node: id ? canonicalName(id, REGISTRY) : null, resolved: id !== null };
   });
+}
+
+export function runGraphQuestion(question: string) {
+  const keywords = findKeywords(question, ONTOLOGY.questionKeywords);
+  const anchor = findMentions(question, REGISTRY)[0] ?? null;
+  if (!anchor || keywords.length === 0) return null;
+  const trace = traceHops(anchor, keywords.map((keyword) => ({ rel: keyword.rel, dir: keyword.dir })), triples);
+  const graphAnswer = answerGraph(question, REGISTRY, triples);
+  if (!graphAnswer) return null;
+  return {
+    answer: graphAnswer,
+    baseline: answerVector(question, REGISTRY, CHUNKS, BY_CHUNK, 3),
+    hops: trace.hops.map((hop) => ({ from: canonicalName(hop.from, REGISTRY) ?? hop.from, relation: hop.rel, to: canonicalName(hop.to, REGISTRY) ?? hop.to, chunkId: hop.chunkId })),
+  };
 }

@@ -1,0 +1,50 @@
+{
+  "repository": "grafo",
+  "checks": [
+    {
+      "locale": "en",
+      "htmlLang": "en",
+      "buttons": [
+        "Traverse graph",
+        "Cancel",
+        "Reset",
+        "Play",
+        "Show all"
+      ],
+      "inputs": 2,
+      "clicked": "Traverse graph",
+      "traceEvents": 3,
+      "keyboardFocus": "SELECT",
+      "editingInvalidatesEvidence": true,
+      "resetClearsResult": true,
+      "cancelUsable": true,
+      "languageSwitchWithoutStorage": true
+    },
+    {
+      "locale": "es",
+      "htmlLang": "es",
+      "buttons": [
+        "Recorrer grafo",
+        "Cancelar",
+        "Restablecer",
+        "Reproducir",
+        "Ver todo"
+      ],
+      "inputs": 2,
+      "clicked": "Recorrer grafo",
+      "traceEvents": 3,
+      "keyboardFocus": "SELECT",
+      "editingInvalidatesEvidence": true,
+      "resetClearsResult": true,
+      "cancelUsable": true,
+      "languageSwitchWithoutStorage": true
+    }
+  ],
+  "errors": [],
+  "legacyRedirectRetainsQuery": true,
+  "unsupportedLocale404": true,
+  "translatedBodyDiffers": true,
+  "reducedMotionDisablesPlayback": true,
+  "mobileNoOverflow": true,
+  "noExternalOrApiRequests": true
+}

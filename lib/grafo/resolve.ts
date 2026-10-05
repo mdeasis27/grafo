@@ -1,6 +1,7 @@
 // lib/grafo/resolve.ts
-// Entity resolution — the part every RAG tutorial skips. "Acme Corp", "ACME"
-// and "Acme Corporation" must collapse into one node or the graph is
+// Entity resolution — the part every RAG tutorial skips. "Organization A",
+// "ORGANIZATION A" and "Organization A Incorporated" must collapse into one
+// node or the graph is
 // four disconnected islands. Three passes, in order:
 //   1. exact canonical-name match
 //   2. alias match
