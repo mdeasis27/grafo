@@ -1,0 +1,17 @@
+{
+  "paths": [
+    { "id": "q01", "anchor": "acme", "count": false, "legs": [{ "from": "acme", "rel": "CEO_OF", "to": "bob" }] },
+    { "id": "q02", "anchor": "acme", "count": false, "legs": [{ "from": "acme", "rel": "FOUNDED_BY", "to": "alice" }] },
+    { "id": "q03", "anchor": "gamma", "count": false, "legs": [{ "from": "gamma", "rel": "OPERATES_IN", "to": "mexico" }] },
+    { "id": "q04", "anchor": "acme", "count": false, "legs": [{ "from": "acme", "rel": "ACQUIRED", "to": "beta" }] },
+    { "id": "q05", "anchor": "gamma", "count": false, "legs": [{ "from": "gamma", "rel": "INVESTED_IN", "to": "delta" }] },
+    { "id": "q06", "anchor": "acme", "count": false, "legs": [{ "from": "acme", "rel": "COMPETES_WITH", "to": "gamma" }, { "from": "gamma", "rel": "OPERATES_IN", "to": "mexico" }] },
+    { "id": "q07", "anchor": "acme", "count": false, "legs": [{ "from": "acme", "rel": "ACQUIRED", "to": "beta" }, { "from": "beta", "rel": "INVESTED_IN", "to": "delta" }] },
+    { "id": "q08", "anchor": "gamma", "count": false, "legs": [{ "from": "gamma", "rel": "PARTNERS_WITH", "to": "epsilon" }, { "from": "epsilon", "rel": "OPERATES_IN", "to": "mexico" }] },
+    { "id": "q09", "anchor": "acme", "count": false, "legs": [{ "from": "acme", "rel": "COMPETES_WITH", "to": "gamma" }, { "from": "gamma", "rel": "PARTNERS_WITH", "to": "epsilon" }, { "from": "epsilon", "rel": "OPERATES_IN", "to": "mexico" }] },
+    { "id": "q10", "anchor": "delta", "count": true, "legs": [{ "from": "delta", "rel": "INVESTED_IN", "to": "acme" }, { "from": "delta", "rel": "INVESTED_IN", "to": "gamma" }, { "from": "delta", "rel": "INVESTED_IN", "to": "beta" }] },
+    { "id": "q11", "anchor": "mexico", "count": true, "legs": [{ "from": "mexico", "rel": "OPERATES_IN", "to": "gamma" }, { "from": "mexico", "rel": "OPERATES_IN", "to": "epsilon" }] },
+    { "id": "q12", "anchor": "brazil", "count": false, "legs": [] },
+    { "id": "q13", "anchor": "acme", "count": false, "legs": [] }
+  ]
+}
