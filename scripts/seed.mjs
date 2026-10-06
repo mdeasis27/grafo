@@ -22,10 +22,10 @@ loadEnv();
 const sql = neon(process.env.DATABASE_URL);
 
 const QUERIES = [
-  ["Who is the CEO of Acme?", "Bob Rivera", 1],
-  ["Acme's competitor operates in which region?", "Mexico", 2],
-  ["The company Acme acquired — which investor backed it?", "Delta Ventures", 2],
-  ["Acme's competitor partners with a company — in which region does that company operate?", "Mexico", 3],
+  ["Who is the CEO of Organization A?", "Bob Rivera", 1],
+  ["Organization A's competitor operates in which region?", "Mexico", 2],
+  ["The company Organization A acquired — which investor backed it?", "Investor A", 2],
+  ["Organization A's competitor partners with a company — in which region does that company operate?", "Mexico", 3],
 ];
 
 async function main() {
