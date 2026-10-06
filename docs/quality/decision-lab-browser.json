@@ -1,0 +1,51 @@
+{
+  "repository": "grafo",
+  "scope": "Real React component with controlled locale; Next routes not tested.",
+  "checks": [
+    {
+      "locale": "en",
+      "scenarios": [
+        {
+          "preset": "Supported path\nCommitted hops exist.",
+          "outcome": "Grounded answer\n\nMexico"
+        },
+        {
+          "preset": "Outside ontology\nThe question is refused.",
+          "outcome": "Out of scope\n\nThis question is outside the committed ontology."
+        }
+      ],
+      "mobileNoOverflow": true,
+      "reducedMotion": true,
+      "keyboard": true,
+      "noRequests": true,
+      "sceneChangesWithScenario": true,
+      "editingClearsPresetAndTrace": true,
+      "resetRestoresFirstPreset": true,
+      "cancelControlPresent": true,
+      "presetRestoresAllInputs": true
+    },
+    {
+      "locale": "es",
+      "scenarios": [
+        {
+          "preset": "Ruta sustentada\nHay saltos confirmados.",
+          "outcome": "Respuesta sustentada\n\nLa respuesta une las relaciones visibles arriba; abre la comparación para inspeccionar el texto original."
+        },
+        {
+          "preset": "Fuera de ontología\nSe rechaza la pregunta.",
+          "outcome": "Fuera de alcance\n\nNo existe una ruta soportada en la ontología local."
+        }
+      ],
+      "mobileNoOverflow": true,
+      "reducedMotion": true,
+      "keyboard": true,
+      "noRequests": true,
+      "sceneChangesWithScenario": true,
+      "editingClearsPresetAndTrace": true,
+      "resetRestoresFirstPreset": true,
+      "cancelControlPresent": true,
+      "presetRestoresAllInputs": true
+    }
+  ],
+  "errors": []
+}

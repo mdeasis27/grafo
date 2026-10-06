@@ -8,52 +8,52 @@ const REGISTRY = { entities: entitiesRaw.entities as Entity[] };
 
 describe("normalize", () => {
   it("lowercases, strips punctuation, collapses whitespace", () => {
-    expect(normalize("  Acme  Corp. ")).toBe("acme corp");
-    expect(normalize("ACME")).toBe("acme");
+    expect(normalize("  Organization  A. ")).toBe("organization a");
+    expect(normalize("ORGANIZATION A")).toBe("organization a");
   });
 });
 
 describe("trigram similarity", () => {
   it("is 1 for identical strings", () => {
-    expect(trigramSimilarity("acmecorp", "acmecorp")).toBeCloseTo(1, 10);
+    expect(trigramSimilarity("organizationa", "organizationa")).toBeCloseTo(1, 10);
   });
   it("is 0 for disjoint strings", () => {
-    expect(trigramSimilarity("acme", "beta")).toBe(0);
+    expect(trigramSimilarity("organizationa", "investora")).toBe(0);
   });
   it("scores a single-char typo above threshold", () => {
-    expect(trigramSimilarity("acmecorp", "acmecorrp")).toBeGreaterThan(0.6);
+    expect(trigramSimilarity("organizationaincorporated", "organizationaincorported")).toBeGreaterThan(0.6);
   });
 });
 
 describe("resolveMention", () => {
   it("matches exact canonical name", () => {
-    expect(resolveMention("Acme Corp", REGISTRY)).toBe("acme");
+    expect(resolveMention("Organization A", REGISTRY)).toBe("acme");
   });
   it("matches aliases regardless of case", () => {
-    expect(resolveMention("ACME", REGISTRY)).toBe("acme");
-    expect(resolveMention("Acme Corporation", REGISTRY)).toBe("acme");
-    expect(resolveMention("acme", REGISTRY)).toBe("acme");
-    expect(resolveMention("Delta", REGISTRY)).toBe("delta");
-    expect(resolveMention("GammaLabs", REGISTRY)).toBe("gamma");
+    expect(resolveMention("ORGANIZATION A", REGISTRY)).toBe("acme");
+    expect(resolveMention("Organization A Incorporated", REGISTRY)).toBe("acme");
+    expect(resolveMention("Org A", REGISTRY)).toBe("acme");
+    expect(resolveMention("Investor A", REGISTRY)).toBe("delta");
+    expect(resolveMention("Org C", REGISTRY)).toBe("gamma");
   });
   it("collapses a typo into the same node via similarity", () => {
-    expect(resolveMention("Acme Corrp", REGISTRY)).toBe("acme");
+    expect(resolveMention("Organization A Incorported", REGISTRY)).toBe("acme");
   });
   it("returns null for unknown entities", () => {
-    expect(resolveMention("Tesla", REGISTRY)).toBeNull();
+    expect(resolveMention("Unlisted entity", REGISTRY)).toBeNull();
     expect(resolveMention("Oracle", REGISTRY)).toBeNull();
   });
 });
 
 describe("findMentions", () => {
   it("returns ordered unique entity ids", () => {
-    expect(findMentions("Who is the CEO of Acme?", REGISTRY)).toEqual(["acme"]);
-    expect(findMentions("Delta Ventures invested in Gamma Labs", REGISTRY)).toEqual([
+    expect(findMentions("Who is the CEO of Organization A?", REGISTRY)).toEqual(["acme"]);
+    expect(findMentions("Investor A invested in Organization C", REGISTRY)).toEqual([
       "delta",
       "gamma",
     ]);
   });
   it("handles possessives", () => {
-    expect(findMentions("Acme's competitor", REGISTRY)).toEqual(["acme"]);
+    expect(findMentions("Organization A's competitor", REGISTRY)).toEqual(["acme"]);
   });
 });

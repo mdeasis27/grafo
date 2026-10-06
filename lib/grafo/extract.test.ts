@@ -38,7 +38,7 @@ describe("extractTriples (validation + retry)", () => {
       id: "x01",
       docId: "d",
       section: "s",
-      text: "Acme Corp purchased BetaCorp.",
+      text: "Organization A purchased Organization B.",
     };
     const result = extractTriples([chunk], ENTITIES);
     expect(result.triples).toHaveLength(1);
@@ -52,7 +52,7 @@ describe("extractTriples (validation + retry)", () => {
       id: "x02",
       docId: "d",
       section: "s",
-      text: "Acme Corp ziggurats BetaCorp.",
+      text: "Organization A ziggurats Organization B.",
     };
     const result = extractTriples([chunk], ENTITIES);
     expect(result.triples).toHaveLength(0);

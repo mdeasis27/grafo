@@ -1,0 +1,7 @@
+{
+  "command": "python -m pytest -q",
+  "workingDirectory": "backend",
+  "exitCode": 0,
+  "passed": 6,
+  "evidence": "Executed during the same implementation session; no backend changes followed verification."
+}
