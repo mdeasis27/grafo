@@ -36,8 +36,11 @@ export function answerGraph(
   question: string,
   registry: Registry,
   triples: readonly Triple[],
+  maxHops = Number.POSITIVE_INFINITY,
 ): string | null {
+  // An aggregation counts neighbors over one relation: it needs one link.
   if (isAggregation(question)) {
+    if (maxHops < 1) return null;
     const q = question.toLowerCase();
     const aggKw = ONTOLOGY.aggKeywords.find((k) => q.includes(k.key));
     if (!aggKw) return null;
@@ -51,6 +54,8 @@ export function answerGraph(
 
   const keywords = findKeywords(question, ONTOLOGY.questionKeywords);
   if (keywords.length === 0) return null;
+  // Refuse when the question needs more links than the cap allows.
+  if (keywords.length > maxHops) return null;
   const anchor = findMentions(question, registry)[0] ?? null;
   if (!anchor) return null;
 

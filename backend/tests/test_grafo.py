@@ -87,3 +87,12 @@ def test_benchmark_matches_fixture():
     for b in ["1", "2", "3", "agg", "oos"]:
         assert result["graph"]["byHop"][b]["accuracy"] == pytest.approx(fixture["graph"]["byHop"][b], abs=1e-9)
         assert result["vector"]["byHop"][b]["accuracy"] == pytest.approx(fixture["vector"]["byHop"][b], abs=1e-9)
+
+
+def test_answer_graph_link_cap_matches_fixture():
+    entities = _entities()
+    triples = extract_triples(_chunks(), entities, _ontology())["triples"]
+    for cap, answers in _load("hops.json")["answers"].items():
+        assert [answer_graph(q["text"], entities, triples, _ontology(), int(cap)) for q in _golden()] == answers
+    q09 = next(q for q in _golden() if q["id"] == "q09")
+    assert answer_graph(q09["text"], entities, triples, _ontology(), None) == q09["gold"]
