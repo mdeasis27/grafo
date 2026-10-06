@@ -18,7 +18,7 @@ export interface GrafoStory {
 
 export const STORY: Record<"en" | "es", GrafoStory> = {
   en: {
-    name: "Knowledge graph",
+    name: "Connected evidence",
     oneLiner: "Some answers only show up when you follow the chain: who knows whom, and whom that person knows.",
     chips: ["Linked answers", "2 min", "Live demo"],
     analogy: {
