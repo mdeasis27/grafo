@@ -27,8 +27,12 @@ def find_keywords(question: str, table: list[dict]) -> list[dict]:
     return [kw for _, kw in hits]
 
 
-def answer_graph(question: str, entities: list[dict], triples: list[dict], ontology: dict) -> str | None:
+def answer_graph(question: str, entities: list[dict], triples: list[dict], ontology: dict, max_hops: int | None = None) -> str | None:
+    cap = float("inf") if max_hops is None else max_hops
+    # An aggregation counts neighbors over one relation: it needs one link.
     if is_aggregation(question, ontology["aggTriggers"]):
+        if cap < 1:
+            return None
         q = question.lower()
         agg_kw = next((k for k in ontology["aggKeywords"] if k["key"] in q), None)
         if not agg_kw:
@@ -42,6 +46,9 @@ def answer_graph(question: str, entities: list[dict], triples: list[dict], ontol
 
     keywords = find_keywords(question, ontology["questionKeywords"])
     if not keywords:
+        return None
+    # Refuse when the question needs more links than the cap allows.
+    if len(keywords) > cap:
         return None
     mentions = find_mentions(question, entities)
     anchor = mentions[0] if mentions else None

@@ -1,13 +1,13 @@
 {
   "cases": [
-    { "mention": "Acme Corp", "expected": "acme" },
-    { "mention": "ACME", "expected": "acme" },
-    { "mention": "Acme Corporation", "expected": "acme" },
-    { "mention": "acme", "expected": "acme" },
-    { "mention": "Acme Corrp", "expected": "acme" },
-    { "mention": "Delta", "expected": "delta" },
-    { "mention": "GammaLabs", "expected": "gamma" },
-    { "mention": "Gamma Labs", "expected": "gamma" },
+    { "mention": "Organization A", "expected": "acme" },
+    { "mention": "ORGANIZATION A", "expected": "acme" },
+    { "mention": "Organization A Incorporated", "expected": "acme" },
+    { "mention": "Org A", "expected": "acme" },
+    { "mention": "Organization A Incorported", "expected": "acme" },
+    { "mention": "Investor A", "expected": "delta" },
+    { "mention": "Org C", "expected": "gamma" },
+    { "mention": "Organization C", "expected": "gamma" },
     { "mention": "Unlisted entity", "expected": null },
     { "mention": "Oracle", "expected": null }
   ]

@@ -1,17 +1,17 @@
 {
   "questions": [
-    { "id": "q01", "text": "Who is the CEO of Acme?", "hops": "1", "gold": "Bob Rivera", "evidenceChunkIds": ["c03"] },
-    { "id": "q02", "text": "Who founded Acme?", "hops": "1", "gold": "Alice Chen", "evidenceChunkIds": ["c02"] },
-    { "id": "q03", "text": "Where does Gamma Labs operate?", "hops": "1", "gold": "Mexico", "evidenceChunkIds": ["c07"] },
-    { "id": "q04", "text": "Who did Acme acquire?", "hops": "1", "gold": "BetaCorp", "evidenceChunkIds": ["c01"] },
-    { "id": "q05", "text": "Which investor backed Gamma Labs?", "hops": "1", "gold": "Delta Ventures", "evidenceChunkIds": ["c05"] },
-    { "id": "q06", "text": "Acme's competitor operates in which region?", "hops": "2", "gold": "Mexico", "evidenceChunkIds": ["c06", "c07"] },
-    { "id": "q07", "text": "The company Acme acquired — which investor backed it?", "hops": "2", "gold": "Delta Ventures", "evidenceChunkIds": ["c01", "c15"] },
-    { "id": "q08", "text": "Gamma Labs' partner operates in which region?", "hops": "2", "gold": "Mexico", "evidenceChunkIds": ["c10", "c14"] },
-    { "id": "q09", "text": "Acme's competitor partners with a company — in which region does that company operate?", "hops": "3", "gold": "Mexico", "evidenceChunkIds": ["c06", "c10", "c14"] },
-    { "id": "q10", "text": "How many companies did Delta Ventures invest in?", "hops": "agg", "gold": "3", "evidenceChunkIds": ["c04", "c05", "c15"] },
+    { "id": "q01", "text": "Who is the CEO of Organization A?", "hops": "1", "gold": "Bob Rivera", "evidenceChunkIds": ["c03"] },
+    { "id": "q02", "text": "Who founded Organization A?", "hops": "1", "gold": "Alice Chen", "evidenceChunkIds": ["c02"] },
+    { "id": "q03", "text": "Where does Organization C operate?", "hops": "1", "gold": "Mexico", "evidenceChunkIds": ["c07"] },
+    { "id": "q04", "text": "Who did Organization A acquire?", "hops": "1", "gold": "Organization B", "evidenceChunkIds": ["c01"] },
+    { "id": "q05", "text": "Which investor backed Organization C?", "hops": "1", "gold": "Investor A", "evidenceChunkIds": ["c05"] },
+    { "id": "q06", "text": "Organization A's competitor operates in which region?", "hops": "2", "gold": "Mexico", "evidenceChunkIds": ["c06", "c07"] },
+    { "id": "q07", "text": "The company Organization A acquired — which investor backed it?", "hops": "2", "gold": "Investor A", "evidenceChunkIds": ["c01", "c15"] },
+    { "id": "q08", "text": "Organization C's partner operates in which region?", "hops": "2", "gold": "Mexico", "evidenceChunkIds": ["c10", "c14"] },
+    { "id": "q09", "text": "Organization A's competitor partners with a company — in which region does that company operate?", "hops": "3", "gold": "Mexico", "evidenceChunkIds": ["c06", "c10", "c14"] },
+    { "id": "q10", "text": "How many companies did Investor A invest in?", "hops": "agg", "gold": "3", "evidenceChunkIds": ["c04", "c05", "c15"] },
     { "id": "q11", "text": "How many companies operate in Mexico?", "hops": "agg", "gold": "2", "evidenceChunkIds": ["c07", "c14"] },
     { "id": "q12", "text": "What is the GDP of Brazil?", "hops": "oos", "gold": null, "evidenceChunkIds": [] },
-    { "id": "q13", "text": "Who is the CFO of Acme?", "hops": "oos", "gold": null, "evidenceChunkIds": [] }
+    { "id": "q13", "text": "Who is the CFO of Organization A?", "hops": "oos", "gold": null, "evidenceChunkIds": [] }
   ]
 }

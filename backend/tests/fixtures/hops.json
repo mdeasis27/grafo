@@ -1,0 +1,49 @@
+{
+  "answers": {
+    "1": [
+      "Bob Rivera",
+      "Alice Chen",
+      "Mexico",
+      "Organization B",
+      "Investor A",
+      null,
+      null,
+      null,
+      null,
+      "3",
+      "2",
+      null,
+      null
+    ],
+    "2": [
+      "Bob Rivera",
+      "Alice Chen",
+      "Mexico",
+      "Organization B",
+      "Investor A",
+      "Mexico",
+      "Investor A",
+      "Mexico",
+      null,
+      "3",
+      "2",
+      null,
+      null
+    ],
+    "3": [
+      "Bob Rivera",
+      "Alice Chen",
+      "Mexico",
+      "Organization B",
+      "Investor A",
+      "Mexico",
+      "Investor A",
+      "Mexico",
+      "Mexico",
+      "3",
+      "2",
+      null,
+      null
+    ]
+  }
+}
