@@ -63,7 +63,7 @@ export function StoryPage() {
     </StorySection>
 
     <StorySection index={3} heading={t.compare.heading} lead={t.compare.lead}>
-      {run && result && played ? <MissionComparison locale={locale} prediction={prediction} actual={result.right === 13 ? "yes" : "no"} actualLabel={t.compare.verdict(result.right)} explanation={t.compare.sentence(result.comparison.graph, result.comparison.vector)} sides={[
+      {run && result && played ? <MissionComparison locale={locale} prediction={prediction} actual={result.right === result.items.length ? "yes" : "no"} actualLabel={t.compare.verdict(result.right)} explanation={t.compare.sentence(result.comparison.graph, result.comparison.vector)} sides={[
         { label: t.compare.graph(run.input.links), value: `${result.comparison.graph}`, detail: t.compare.right, positive: result.comparison.graph > result.comparison.vector },
         { label: t.compare.vector, value: `${result.comparison.vector}`, detail: t.compare.right, positive: result.comparison.vector > result.comparison.graph },
       ]} /> : null}

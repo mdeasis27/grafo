@@ -6,21 +6,15 @@ import { StoryStage } from "@/design-system/demo/decision-lab";
 import { OutcomeTape, useReducedMotion } from "@/design-system/demo/project-story";
 import { tapeCounts } from "@/design-system/demo/outcome-tape";
 import { GRAPH_EDGES, type AnsweredQuestion, type LinkStatus } from "./mission";
-import { questionCells, revealedQuestions } from "./scene-state";
+import { baseLinks, linkKey as key, NARROW, questionCells, revealedQuestions, WIDE, type Layout } from "./scene-state";
 import { STORY } from "./story";
 
 type Point = readonly [number, number];
-type Layout = { w: number; h: number; font: number; nodes: Record<string, Point> };
-
-// Two hand-placed maps of the same graph: wide, and narrow for phones (switched by container width).
-const WIDE: Layout = { w: 720, h: 330, font: 17, nodes: { bob: [90, 60], beta: [250, 55], delta: [440, 55], alice: [90, 170], acme: [250, 170], gamma: [440, 170], epsilon: [610, 170], brazil: [110, 290], zeta: [300, 290], mexico: [525, 290] } };
-const NARROW: Layout = { w: 390, h: 460, font: 15, nodes: { bob: [60, 60], beta: [200, 50], delta: [320, 50], alice: [60, 170], acme: [200, 170], gamma: [330, 170], brazil: [60, 300], zeta: [200, 300], epsilon: [330, 300], mexico: [215, 420] } };
 
 const HOP_MS = 200;
 const STROKE: Record<LinkStatus, string> = { served: "stroke-success", rerouted: "stroke-info", lost: "stroke-danger" };
 const FILL: Record<LinkStatus, string> = { served: "fill-success", rerouted: "fill-info", lost: "fill-danger" };
 const MARK: Record<LinkStatus, string> = { served: "✓", rerouted: "⋯", lost: "×" };
-const key = (a: string, b: string) => [a, b].sort().join("|");
 const delay = (ms: number): CSSProperties => ({ animationDelay: `${ms}ms` });
 const HALO: CSSProperties = { paintOrder: "stroke", stroke: "var(--surface)", strokeWidth: 5, strokeLinejoin: "round" };
 // Keyframes live with the scene; reduced motion shows the end state of every animation.
@@ -38,15 +32,9 @@ function endpoints(q: AnsweredQuestion): string[] {
 
 function ContactMap({ layout, items, revealed, current, ariaLabel, copy, className }: { layout: Layout; items: AnsweredQuestion[]; revealed: number; current: number; ariaLabel: string; copy: (typeof STORY)["en"]["scene"]; className: string }) {
   const P = layout.nodes;
-  const edges = GRAPH_EDGES.filter(e => P[e.from] && P[e.to]);
-  const seen = new Set<string>();
-  const missing = new Set<string>();
-  items.slice(0, revealed).forEach(({ walk }, i) => {
-    if (i === current) return;
-    walk.legs.forEach((l, k) => (k < walk.reach ? seen : missing).add(key(l.from, l.to)));
-  });
+  const { seen, missing } = baseLinks(items, revealed, current);
   const q = current >= 0 ? items[current] : undefined;
-  const legs = q ? q.walk.legs.filter(l => P[l.from] && P[l.to]) : [];
+  const legs = q ? q.walk.legs : [];
   const legDelay = (k: number) => (q?.walk.count ? 0 : k * HOP_MS);
   const settle = q ? (q.walk.count ? HOP_MS : q.walk.reach * HOP_MS) : 0;
   const label = (a: Point, b: Point, text: string, cls: string, style?: CSSProperties) =>
@@ -54,7 +42,7 @@ function ContactMap({ layout, items, revealed, current, ariaLabel, copy, classNa
 
   return <svg viewBox={`0 0 ${layout.w} ${layout.h}`} role="img" aria-label={ariaLabel} className={`h-auto w-full ${className}`} data-grafo-map>
     <style>{CSS}</style>
-    {edges.map(e => { const k = key(e.from, e.to); return <line key={`${e.from}-${e.rel}-${e.to}`} x1={P[e.from][0]} y1={P[e.from][1]} x2={P[e.to][0]} y2={P[e.to][1]} strokeWidth={missing.has(k) ? 3 : 2} strokeDasharray={missing.has(k) ? "6 6" : undefined} className={missing.has(k) ? "stroke-info" : seen.has(k) ? "stroke-foreground/45" : "stroke-border"} />; })}
+    {GRAPH_EDGES.map(e => { const k = key(e.from, e.to); return <line key={`${e.from}-${e.rel}-${e.to}`} x1={P[e.from][0]} y1={P[e.from][1]} x2={P[e.to][0]} y2={P[e.to][1]} strokeWidth={missing.has(k) ? 3 : 2} strokeDasharray={missing.has(k) ? "6 6" : undefined} className={missing.has(k) ? "stroke-info" : seen.has(k) ? "stroke-foreground/45" : "stroke-border"} />; })}
     {q ? <g key={current} data-current-question={q.id}>
       {legs.map((l, k) => {
         const a = P[l.from], b = P[l.to];
@@ -107,7 +95,7 @@ export function GrafoStoryScene({ frame, result, links, locale }: { frame: Playb
   }
   const used = q ? (q.walk.count ? Math.min(1, q.walk.legs.length) : q.walk.reach) : 0;
   const summary = copy.summary(c.rerouted, links);
-  const ariaLabel = [copy.mapLabel, q ? `${copy.questionOf(current + 1)}: ${copy.questions[current]} ${outcome}` : "", done ? summary : ""].filter(Boolean).join(". ");
+  const ariaLabel = [copy.mapLabel, q ? `${copy.questionOf(current + 1, items.length)}: ${copy.questions[q.id]} ${outcome}` : "", done ? summary : ""].filter(Boolean).join(". ");
   const settle = q ? (q.walk.count ? HOP_MS : q.walk.reach * HOP_MS) : 0;
 
   return <StoryStage locale={locale} title={copy.title} caption={copy.caption} step={frame.visible} total={frame.total}>
@@ -117,15 +105,15 @@ export function GrafoStoryScene({ frame, result, links, locale }: { frame: Playb
     </div>
     <div className="mt-4 min-h-[4.5rem] text-sm leading-6" aria-live="polite" data-question-status>
       {q ? <>
-        <p><span className="mr-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">{copy.questionOf(current + 1)}</span>{copy.questions[current]}</p>
+        <p><span className="mr-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">{copy.questionOf(current + 1, items.length)}</span>{copy.questions[q.id]}</p>
         <p className="font-mono text-xs text-muted-foreground">{copy.links(used, q.walk.count ? 1 : links)}</p>
         <p key={current} className={`grafo-in font-medium ${q.status === "served" ? "text-success" : q.status === "rerouted" ? "text-info" : "text-danger"}`} style={delay(settle)}><span aria-hidden="true" className="mr-1">{MARK[q.status]}</span>{outcome}</p>
       </> : <p className="text-muted-foreground">{done ? null : copy.idle}</p>}
       {done ? <p className="mt-1" data-scene-summary>{summary}</p> : null}
     </div>
     <div className="mt-6">
-      <OutcomeTape cells={cells} labels={copy.tape} ariaLabel={copy.tapeLabel} columns={13} />
-      <p className="mt-4 font-mono text-2xl font-semibold tracking-tight">{copy.rightOf(c.served)}</p>
+      <OutcomeTape cells={cells} labels={copy.tape} ariaLabel={copy.tapeLabel} columns={items.length} />
+      <p className="mt-4 font-mono text-2xl font-semibold tracking-tight">{copy.rightOf(c.served, items.length)}</p>
     </div>
   </StoryStage>;
 }
