@@ -1,7 +1,5 @@
 import type { Heading } from "@/design-system/demo/project-story";
 
-type NodeCopy = { name: string; sub: string; analogy: string };
-
 export interface GrafoStory {
   name: string;
   oneLiner: string;
@@ -13,7 +11,12 @@ export interface GrafoStory {
   fit: { heading: Heading; worthLabel: string; worth: string; notLabel: string; not: string };
   proves: { heading: Heading; text: string };
   engineers: { summary: string; points: string[]; repoLabel: string };
-  scene: { title: string; caption: string; statusLabels: { active: string; danger: string; success: string }; tapeLabel: string; nodes: { questions: NodeCopy; graph: NodeCopy; answered: NodeCopy; tooFar: NodeCopy }; tape: { served: string; rerouted: string; lost: string }; rightOf: (n: number) => string };
+  scene: {
+    title: string; caption: string; tapeLabel: string; tape: { served: string; rerouted: string; lost: string }; rightOf: (n: number) => string;
+    mapLabel: string; idle: string; entities: Record<string, string>; relations: Record<string, string>; questions: string[];
+    questionOf: (n: number) => string; links: (used: number, cap: number) => string; answer: string; counted: (n: number) => string;
+    noData: string; outOfReach: (need: number, cap: number) => string; wrong: string; missing: string; summary: (outOfReach: number, cap: number) => string;
+  };
 }
 
 export const STORY: Record<"en" | "es", GrafoStory> = {
@@ -86,17 +89,38 @@ export const STORY: Record<"en" | "es", GrafoStory> = {
     },
     scene: {
       title: "What the graph did with each question",
-      caption: "Watch each question follow its links to an answer, or stop when the chain runs out.",
-      statusLabels: { active: "following links", success: "answered", danger: "wrong answer" },
+      caption: "Each question starts at whoever it asks about and moves from contact to contact. Green reached the answer, blue ran out of links.",
       tapeLabel: "Thirteen questions, in order",
-      nodes: {
-        questions: { name: "Questions", sub: "13 about companies", analogy: "what you ask" },
-        graph: { name: "Graph", sub: "follows links", analogy: "your contacts" },
-        answered: { name: "Answered", sub: "right or correctly refused", analogy: "the plumber" },
-        tooFar: { name: "Out of reach", sub: "needs more links", analogy: "a friend too far" },
-      },
       tape: { served: "answered right", rerouted: "out of reach", lost: "wrong answer" },
       rightOf: (n) => `Answered correctly: ${n} of 13`,
+      mapLabel: "Map of companies, people and countries joined by facts from the documents",
+      idle: "Each question follows its links here.",
+      entities: { acme: "Company A", beta: "Company B", gamma: "Company C", epsilon: "Company D", zeta: "Company E", delta: "Investor A", alice: "Founder", bob: "CEO", mexico: "Mexico", brazil: "Brazil" },
+      relations: { ACQUIRED: "acquired", FOUNDED_BY: "founded by", CEO_OF: "runs", INVESTED_IN: "invested", COMPETES_WITH: "competes", OPERATES_IN: "operates in", SUPPLIES_TO: "supplies", PARTNERS_WITH: "partners" },
+      questions: [
+        "Who is the CEO of Company A?",
+        "Who founded Company A?",
+        "Where does Company C operate?",
+        "Which company did Company A acquire?",
+        "Which investor backed Company C?",
+        "Where does Company A's competitor operate?",
+        "Which investor backed the company Company A acquired?",
+        "Where does Company C's partner operate?",
+        "Where does the partner of Company A's competitor operate?",
+        "How many companies did Investor A invest in?",
+        "How many companies operate in Mexico?",
+        "What is the GDP of Brazil?",
+        "Who is the CFO of Company A?",
+      ],
+      questionOf: (n) => `Question ${n} of 13`,
+      links: (used, cap) => `Links followed: ${used} of ${cap}`,
+      answer: "Answer:",
+      counted: (n) => `Answer: ${n}, counting its contacts.`,
+      noData: "The documents don't say, and it answers exactly that.",
+      outOfReach: (need, cap) => `Out of reach: it needs ${need} links and may follow ${cap}.`,
+      wrong: "Wrong answer.",
+      missing: "missing link",
+      summary: (n, cap) => n === 0 ? `Every question reached its answer within ${cap} ${cap === 1 ? "link" : "links"}.` : `${n} ${n === 1 ? "question needed" : "questions needed"} more than ${cap} ${cap === 1 ? "link" : "links"} and stayed out of reach, with no made-up answer.`,
     },
   },
   es: {
@@ -168,17 +192,38 @@ export const STORY: Record<"en" | "es", GrafoStory> = {
     },
     scene: {
       title: "Lo que hizo el grafo con cada pregunta",
-      caption: "Mira cómo cada pregunta sigue sus eslabones hasta una respuesta, o se detiene cuando la cadena se acaba.",
-      statusLabels: { active: "siguiendo eslabones", success: "respondió", danger: "respuesta equivocada" },
+      caption: "Cada pregunta sale de quien la menciona y viaja de contacto en contacto. Verde llegó a la respuesta, azul se quedó sin eslabones.",
       tapeLabel: "Trece preguntas, en orden",
-      nodes: {
-        questions: { name: "Preguntas", sub: "13 sobre empresas", analogy: "lo que preguntas" },
-        graph: { name: "Grafo", sub: "sigue eslabones", analogy: "tus contactos" },
-        answered: { name: "Respondida", sub: "bien o rechazada con razón", analogy: "el plomero" },
-        tooFar: { name: "Fuera de alcance", sub: "faltan eslabones", analogy: "un amigo demasiado lejos" },
-      },
       tape: { served: "respondida bien", rerouted: "fuera de alcance", lost: "respuesta equivocada" },
       rightOf: (n) => `Respondidas bien: ${n} de 13`,
+      mapLabel: "Mapa de empresas, personas y países unidos por datos de los documentos",
+      idle: "Aquí cada pregunta sigue sus eslabones.",
+      entities: { acme: "Empresa A", beta: "Empresa B", gamma: "Empresa C", epsilon: "Empresa D", zeta: "Empresa E", delta: "Inversionista A", alice: "Fundadora", bob: "Director", mexico: "México", brazil: "Brasil" },
+      relations: { ACQUIRED: "compró", FOUNDED_BY: "la fundó", CEO_OF: "la dirige", INVESTED_IN: "invirtió", COMPETES_WITH: "compite", OPERATES_IN: "opera en", SUPPLIES_TO: "le vende", PARTNERS_WITH: "socia" },
+      questions: [
+        "¿Quién dirige la Empresa A?",
+        "¿Quién fundó la Empresa A?",
+        "¿Dónde opera la Empresa C?",
+        "¿Qué empresa compró la Empresa A?",
+        "¿Qué inversionista respaldó a la Empresa C?",
+        "¿Dónde opera la competidora de la Empresa A?",
+        "¿Qué inversionista respaldó a la empresa que compró la Empresa A?",
+        "¿Dónde opera la socia de la Empresa C?",
+        "¿Dónde opera la socia de la competidora de la Empresa A?",
+        "¿En cuántas empresas invirtió el Inversionista A?",
+        "¿Cuántas empresas operan en México?",
+        "¿Cuál es el PIB de Brasil?",
+        "¿Quién es el director financiero de la Empresa A?",
+      ],
+      questionOf: (n) => `Pregunta ${n} de 13`,
+      links: (used, cap) => `Eslabones seguidos: ${used} de ${cap}`,
+      answer: "Respuesta:",
+      counted: (n) => `Respuesta: ${n}, contando sus contactos.`,
+      noData: "Los documentos no lo dicen, y eso es lo que responde.",
+      outOfReach: (need, cap) => `Fuera de alcance: necesita ${need} eslabones y puede seguir ${cap}.`,
+      wrong: "Respuesta equivocada.",
+      missing: "falta este eslabón",
+      summary: (n, cap) => n === 0 ? `Todas las preguntas llegaron a su respuesta con ${cap} ${cap === 1 ? "eslabón" : "eslabones"} o menos.` : `${n} ${n === 1 ? "pregunta necesitaba" : "preguntas necesitaban"} más de ${cap} ${cap === 1 ? "eslabón" : "eslabones"} y ${n === 1 ? "quedó" : "quedaron"} fuera de alcance, sin inventar respuesta.`,
     },
   },
 };

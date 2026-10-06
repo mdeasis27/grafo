@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from grafo.answer import answer_graph, answer_vector
+from grafo.answer import answer_graph, answer_vector, question_path
 from grafo.benchmark import benchmark
 from grafo.extract import extract_triples, triples_by_chunk
 from grafo.resolve import resolve_mention
@@ -96,3 +96,13 @@ def test_answer_graph_link_cap_matches_fixture():
         assert [answer_graph(q["text"], entities, triples, _ontology(), int(cap)) for q in _golden()] == answers
     q09 = next(q for q in _golden() if q["id"] == "q09")
     assert answer_graph(q09["text"], entities, triples, _ontology(), None) == q09["gold"]
+
+
+def test_question_path_matches_shared_fixture():
+    # One fixture for both suites: read the TypeScript copy directly, no duplicate.
+    shared = Path(__file__).resolve().parents[2] / "lib" / "grafo" / "fixtures" / "paths.json"
+    expected = json.loads(shared.read_text(encoding="utf-8"))["paths"]
+    entities, ontology = _entities(), _ontology()
+    triples = extract_triples(_chunks(), entities, ontology)["triples"]
+    got = [{"id": q["id"], **question_path(q["text"], entities, triples, ontology)} for q in _golden()]
+    assert got == expected

@@ -4,7 +4,9 @@ import corpusRaw from "./data/corpus.json";
 import entitiesRaw from "./data/entities.json";
 import goldenRaw from "./data/golden.json";
 import fixture from "./fixtures/hops.json";
-import { answerGraph } from "./answer";
+import paths from "./fixtures/paths.json";
+import { answerGraph, questionPath } from "./answer";
+import { canonicalName } from "./resolve";
 import { extractTriples } from "./extract";
 import type { Chunk, Entity, GoldenQuestion } from "./types";
 
@@ -28,6 +30,22 @@ describe("answerGraph with a link cap", () => {
   it("matches the answers per cap pinned for Python", () => {
     for (const [cap, answers] of Object.entries(fixture.answers)) {
       expect(GOLDEN.map((q) => answerGraph(q.text, REGISTRY, triples, Number(cap)))).toEqual(answers);
+    }
+  });
+});
+
+describe("questionPath", () => {
+  it("matches the paths pinned for Python, one file read by both suites", () => {
+    expect(GOLDEN.map((q) => ({ id: q.id, ...questionPath(q.text, REGISTRY, triples) }))).toEqual(paths.paths);
+  });
+
+  it("ends where the uncapped answer is, so the drawing tells the engine's story", () => {
+    for (const q of GOLDEN) {
+      const p = questionPath(q.text, REGISTRY, triples);
+      const answer = answerGraph(q.text, REGISTRY, triples);
+      if (p.count) expect(String(new Set(p.legs.map((l) => l.to)).size)).toBe(answer);
+      else if (p.legs.length) expect(canonicalName(p.legs[p.legs.length - 1].to, REGISTRY)).toBe(answer);
+      else expect(answer).toBeNull();
     }
   });
 });

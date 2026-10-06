@@ -61,6 +61,35 @@ def answer_graph(question: str, entities: list[dict], triples: list[dict], ontol
     return canonical_name(node, entities)
 
 
+def question_path(question: str, entities: list[dict], triples: list[dict], ontology: dict) -> dict:
+    """The links a question needs, uncapped — mirrors questionPath in lib/grafo/answer.ts."""
+    mentions = find_mentions(question, entities)
+    anchor = mentions[0] if mentions else None
+    if not anchor:
+        return {"anchor": None, "count": False, "legs": []}
+    if is_aggregation(question, ontology["aggTriggers"]):
+        q = question.lower()
+        kw = next((k for k in ontology["aggKeywords"] if k["key"] in q), None)
+        if not kw:
+            return {"anchor": anchor, "count": True, "legs": []}
+        neighbors = targets(anchor, kw["rel"], triples) if kw["dir"] == "out" else sources(anchor, kw["rel"], triples)
+        return {"anchor": anchor, "count": True, "legs": [{"from": anchor, "rel": kw["rel"], "to": n} for n in dict.fromkeys(neighbors)]}
+    legs = []
+    current = anchor
+    for kw in find_keywords(question, ontology["questionKeywords"]):
+        if kw["dir"] == "out":
+            candidates = [t for t in triples if t["head"] == current and t["rel"] == kw["rel"]]
+        else:
+            candidates = [t for t in triples if t["tail"] == current and t["rel"] == kw["rel"]]
+        if not candidates:
+            break
+        chosen = sorted(candidates, key=lambda t: (t["tail"], t["head"]))[0]
+        nxt = chosen["tail"] if kw["dir"] == "out" else chosen["head"]
+        legs.append({"from": current, "rel": chosen["rel"], "to": nxt})
+        current = nxt
+    return {"anchor": anchor, "count": False, "legs": legs}
+
+
 def answer_vector(question: str, entities: list[dict], chunks: list[dict], by_chunk: dict[str, list[dict]], ontology: dict, k: int = 3) -> str | None:
     if is_aggregation(question, ontology["aggTriggers"]):
         return None

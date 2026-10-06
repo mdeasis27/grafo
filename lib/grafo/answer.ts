@@ -8,7 +8,7 @@
 
 import { ONTOLOGY } from "./ontology";
 import { canonicalName, findMentions } from "./resolve";
-import { sources, targets, traverse } from "./graph";
+import { sources, targets, traceHops, traverse } from "./graph";
 import { retrieve } from "./retrieve";
 import type { Chunk, Ontology, QuestionKeyword, Triple } from "./types";
 
@@ -62,6 +62,29 @@ export function answerGraph(
   const node = traverse(anchor, keywords.map((k) => ({ rel: k.rel, dir: k.dir })), triples);
   if (node === null) return null;
   return canonicalName(node, registry);
+}
+
+export interface QuestionPath {
+  anchor: string | null;
+  count: boolean;
+  legs: { from: string; rel: string; to: string }[];
+}
+
+/** The links a question needs, uncapped: the chain the graph walks, or the neighbors a count visits.
+ * Mirrors question_path in backend/src/grafo/answer.py; both read fixtures/paths.json. */
+export function questionPath(question: string, registry: Registry, triples: readonly Triple[]): QuestionPath {
+  const anchor = findMentions(question, registry)[0] ?? null;
+  if (!anchor) return { anchor, count: false, legs: [] };
+  if (isAggregation(question)) {
+    const q = question.toLowerCase();
+    const kw = ONTOLOGY.aggKeywords.find((k) => q.includes(k.key));
+    if (!kw) return { anchor, count: true, legs: [] };
+    const neighbors = kw.dir === "out" ? targets(anchor, kw.rel, triples) : sources(anchor, kw.rel, triples);
+    return { anchor, count: true, legs: [...new Set(neighbors)].map((to) => ({ from: anchor, rel: kw.rel, to })) };
+  }
+  const keywords = findKeywords(question, ONTOLOGY.questionKeywords);
+  const trace = traceHops(anchor, keywords.map((k) => ({ rel: k.rel, dir: k.dir })), triples);
+  return { anchor, count: false, legs: trace.hops.map(({ from, rel, to }) => ({ from, rel, to })) };
 }
 
 export function answerVector(

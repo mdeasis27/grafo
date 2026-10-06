@@ -33,3 +33,16 @@ describe("Grafo story copy", () => {
     expect(STORY.es.compare.verdict(12)).toBe("12 de 13 preguntas respondidas bien");
   });
 });
+
+describe("Grafo scene copy", () => {
+  it("has one question per benchmark item and a label for every node and relation a walk touches", async () => {
+    const { followLinks } = await import("./mission");
+    const items = followLinks(3);
+    for (const locale of ["en", "es"] as const) {
+      const scene = STORY[locale].scene;
+      expect(scene.questions).toHaveLength(items.length);
+      for (const { walk } of items) for (const id of [walk.anchor, ...walk.legs.flatMap(l => [l.from, l.to])]) expect(scene.entities[id ?? ""], `${locale}: ${id}`).toBeTruthy();
+      for (const { walk } of items) for (const l of walk.legs) expect(scene.relations[l.rel], `${locale}: ${l.rel}`).toBeTruthy();
+    }
+  });
+});
