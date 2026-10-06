@@ -44,7 +44,7 @@ export function StoryPage() {
         <section className="min-w-0 rounded-xl border border-border bg-surface p-5">
           <MissionPrompt locale={locale} question={t.tryIt.question(links)} prediction={prediction} onPredict={setPrediction} locked={Boolean(run) || demo.running} options={[{ id: "yes", label: t.tryIt.yes }, { id: "no", label: t.tryIt.no }]} />
           <label className="mt-5 block text-sm">{t.tryIt.linksLabel} <span className="font-mono">{links}</span>
-            <input aria-label={t.tryIt.linksLabel} className="mt-2 w-full" type="range" min="1" max="3" step="1" value={links} onChange={e => { setLinks(Number(e.target.value)); clear(); }} />
+            <input aria-label={t.tryIt.linksLabel} aria-valuetext={`${links} / 3`} className="mt-2 w-full" type="range" min="1" max="3" step="1" value={links} onChange={e => { setLinks(Number(e.target.value)); clear(); }} />
           </label>
           <p className="mt-4 text-xs leading-5 text-muted-foreground">{t.tryIt.note}</p>
           <div className="mt-6 flex flex-wrap gap-2">
