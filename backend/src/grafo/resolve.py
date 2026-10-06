@@ -1,6 +1,6 @@
 """Entity resolution — mirrors lib/grafo/resolve.ts.
 
-"Acme Corp", "ACME" and "Acme Corporation" must collapse into one node. Three
+"Organization A", "ORGANIZATION A" and "Organization A Incorporated" must collapse into one node. Three
 passes: exact canonical name, alias list, then trigram similarity over a tuned
 threshold.
 """

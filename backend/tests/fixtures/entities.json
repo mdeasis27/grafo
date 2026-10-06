@@ -1,11 +1,11 @@
 {
   "entities": [
-    { "id": "acme", "type": "COMPANY", "name": "Acme Corp", "aliases": ["ACME", "Acme Corporation", "Acme"] },
-    { "id": "beta", "type": "COMPANY", "name": "BetaCorp", "aliases": ["Beta Corp", "Beta"] },
-    { "id": "gamma", "type": "COMPANY", "name": "Gamma Labs", "aliases": ["Gamma", "GammaLabs"] },
-    { "id": "epsilon", "type": "COMPANY", "name": "Epsilon Analytics", "aliases": ["Epsilon"] },
-    { "id": "zeta", "type": "COMPANY", "name": "Zeta Systems", "aliases": ["Zeta"] },
-    { "id": "delta", "type": "INVESTOR", "name": "Delta Ventures", "aliases": ["Delta"] },
+    { "id": "acme", "type": "COMPANY", "name": "Organization A", "aliases": ["ORGANIZATION A", "Organization A Incorporated", "Org A"] },
+    { "id": "beta", "type": "COMPANY", "name": "Organization B", "aliases": ["ORGANIZATION B", "Org B"] },
+    { "id": "gamma", "type": "COMPANY", "name": "Organization C", "aliases": ["ORGANIZATION C", "Org C"] },
+    { "id": "epsilon", "type": "COMPANY", "name": "Organization D", "aliases": ["ORGANIZATION D", "Org D"] },
+    { "id": "zeta", "type": "COMPANY", "name": "Organization E", "aliases": ["ORGANIZATION E", "Org E"] },
+    { "id": "delta", "type": "INVESTOR", "name": "Investor A", "aliases": ["INVESTOR A", "Inv A"] },
     { "id": "alice", "type": "PERSON", "name": "Alice Chen", "aliases": ["Alice"] },
     { "id": "bob", "type": "PERSON", "name": "Bob Rivera", "aliases": ["Bob"] },
     { "id": "carol", "type": "PERSON", "name": "Carol Diaz", "aliases": ["Carol"] },

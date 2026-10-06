@@ -45,7 +45,7 @@ def test_extraction_is_deterministic_and_complete():
 
 
 def test_extraction_retries_unknown_verb():
-    chunk = {"id": "x01", "docId": "d", "section": "s", "text": "Acme Corp purchased BetaCorp."}
+    chunk = {"id": "x01", "docId": "d", "section": "s", "text": "Organization A purchased Organization B."}
     result = extract_triples([chunk], _entities(), _ontology())
     assert len(result["triples"]) == 1
     assert result["triples"][0]["rel"] == "ACQUIRED"
