@@ -4,7 +4,7 @@
 [![CI](https://github.com/mdeasis27/grafo/actions/workflows/ci.yml/badge.svg)](https://github.com/mdeasis27/grafo/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 <!-- /community-badges -->
 
-[English](README.md) · [Probar demo](https://grafo-manueldeasis27-2515s-projects.vercel.app/es/app) · [Caso de estudio](https://manueldeasis.com/es/projects/grafo) · [Código](https://github.com/mdeasis27/grafo)
+[English](README.md) · [Probar demo](https://grafo-manueldeasis27-2515s-projects.vercel.app/es/app) · [Caso de estudio](https://portafolio-mdea.vercel.app/es/projects/grafo) · [Código](https://github.com/mdeasis27/grafo)
 
 ![Interfaz interactiva local real](docs/images/cover.png)
 
